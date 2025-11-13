@@ -1,0 +1,100 @@
+---
+title: "Project Draft"
+output: html_notebook
+---
+
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+library(tidyverse)
+library(jsonlite)
+
+```
+```{r}
+all <- read.csv(('all.csv'))
+glimpse(all)
+```
+```{r}
+all %>% is.na() %>% sum()
+all %>% duplicated() %>% sum()
+
+```
+
+
+```{r}
+all<- all %>%
+  mutate(
+    hex_color = case_when(
+      monk_category == 1  ~ "#f6ede4",
+      monk_category == 2  ~ "#f3e7db",
+      monk_category == 3  ~ "#f7ead0",
+      monk_category == 4  ~ "#eadaba",
+      monk_category == 5  ~ "#d7bd96",
+      monk_category == 6  ~ "#a07e56",
+      monk_category == 7  ~ "#825c43",
+      monk_category == 8  ~ "#604134",
+      monk_category == 9  ~ "#3a312a",
+      monk_category == 10 ~ "#292420"
+    )
+  )
+monk_palette <- c(
+  "#f6ede4", "#f3e7db", "#f7ead0", "#eadaba", "#d7bd96",
+  "#a07e56", "#825c43", "#604134", "#3a312a", "#292420")
+
+two <- all %>% distinct(brand_name,shade_name,.keep_all = T)
+two_counts <-all %>%  distinct(brand_name,shade_name,.keep_all = T) %>% summarise(count=n(),.by=brand_name)
+two %>% ggplot(aes(x=monk_category, fill=hex_color)) + geom_bar() + scale_fill_manual(values = monk_palette)
+
+#all %>% distinct(brand_name,shade_name,.keep_all = TRUE) %>%  ggplot(aes(x=hex, fill=hex_color)) + geom_bar() + scale_fill_manual(values = monk_palette)
+
+```
+```{r}
+range_counts <- all %>% group_by(brand_name) %>% summarise(count=n())
+range_counts %>% slice_max(count) # Fenty has an extremely large number of shades compared to the average and min.
+range_counts %>% slice_min(count)
+range_counts %>% pull(count) %>% mean()
+
+range_counts
+all %>% ggplot(aes(x=brand_name)) + geom_bar()
+```
+
+```{r}
+#numbert of different products each brand offers
+prod_nums <- all %>% distinct(brand_name,product_name,.keep_all = T) %>%
+  group_by(brand_name) %>%
+  summarise(product_count = n())
+item_nums <- all %>% summarise(item_count=n(),.by=brand_name)
+item_nums %>% right_join(prod_nums)
+prod_nums <- ggplot(aes(x=brand_name))
+```
+
+
+```{r}
+avg_monk_by_brand <- all %>% distinct(brand_name,product_name,shade_name,.keep_all = T) %>%
+  group_by(brand_name) %>% summarize(average_monk_category = round(mean(monk_category, na.rm = TRUE)))
+
+
+avg_monk_by_brand %>% ggplot(aes(x = average_monk_category,y=brand_name)) + geom_point() + coord_flip() # need help with plotting
+```
+
+
+```{r}
+large_selcetion <- item_nums %>% filter(item_count>=80)
+#large_selcetion_alt <- item_nums %>% mutate(range_discription = case_when(item_count>=80 ~'large'))
+large_selcetion
+product_l_ranges <- all %>% filter(brand_name %in% large_selcetion$brand_name) %>%
+  group_by(brand_name,product_name) %>%
+  summarise(total_range = max(L)-min(L),
+            min_lightness = min(L),
+            max_lightness=max(L))
+
+brand_l_ranges <- all %>% filter(brand_name %in% large_selcetion$brand_name) %>%
+  summarise(total_range = round(max(L)-min(L)),
+            min_lightness = (min(L)),
+            max_lightness=max(L),.by = brand_name)
+brand_l_ranges %>% ggplot(aes(x=min_lightness,y=max_lightness,color=brand_name)) + geom_point()
+```
+```{r}
+#Investingating lightness, and lightness range with Monk Category
+brand_l_ranges
+```
