@@ -64,8 +64,8 @@ prod_nums <- all %>% distinct(brand_name,product_name,.keep_all = T) %>%
   group_by(brand_name) %>%
   summarise(product_count = n())
 item_nums <- all %>% summarise(item_count=n(),.by=brand_name)
-joned_nums <- item_nums %>% right_join(prod_nums) %>% mutate(product_item_ratio = item_count/product_count)
-joined_nums %>% ggplot(aes())
+joined_nums <- item_nums %>% right_join(prod_nums) %>% mutate(product_item_ratio = item_count/product_count)
+joined_nums
 ```
 ```{r}
 item_nums %>%
@@ -77,9 +77,8 @@ item_nums %>%
 ```{r}
 avg_monk_by_brand <- all %>% distinct(brand_name,product_name,shade_name,.keep_all = T) %>%
   group_by(brand_name) %>% summarize(average_monk_category = round(mean(monk_category, na.rm = TRUE)))
-
-
-#avg_monk_by_brand %>% ggplot(aes(x = average_monk_category,y=brand_name)) + geom_point() + coord_flip() # need help with plotting
+avg_monk_by_brand %>%
+  ggplot(aes( average_monk_category)) + geom_density()
 ```
 
 
@@ -97,7 +96,9 @@ brand_l_ranges <- all %>% filter(brand_name %in% large_selcetion$brand_name) %>%
   summarise(total_range = round(max(L)-min(L)),
             min_lightness = (min(L)),
             max_lightness=max(L),.by = brand_name)
-brand_l_ranges %>% ggplot(aes(x=min_lightness,y=max_lightness,color=brand_name)) + geom_point()
+brand_l_ranges %>% ggplot(aes(x=min_lightness,y=total_range,color=brand_name)) + geom_point()
+brand_l_ranges %>% ggplot(aes(x=max_lightness,y=total_range,color=brand_name)) + geom_point()
+
 ```
 ```{r}
 #Investingating lightness, and lightness range with Monk Category
