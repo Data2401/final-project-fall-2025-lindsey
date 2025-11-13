@@ -43,7 +43,7 @@ monk_palette <- c(
 
 two <- all %>% distinct(brand_name,shade_name,.keep_all = T)
 two_counts <-all %>%  distinct(brand_name,shade_name,.keep_all = T) %>% summarise(count=n(),.by=brand_name)
-two %>% ggplot(aes(x=monk_category, fill=hex_color)) + geom_bar() + scale_fill_manual(values = monk_palette)
+two %>% ggplot(aes(x=monk_category, fill=hex_color)) + geom_bar() + scale_fill_manual(values = monk_palette[10:1])
 
 #all %>% distinct(brand_name,shade_name,.keep_all = TRUE) %>%  ggplot(aes(x=hex, fill=hex_color)) + geom_bar() + scale_fill_manual(values = monk_palette)
 
@@ -55,7 +55,8 @@ range_counts %>% slice_min(count)
 range_counts %>% pull(count) %>% mean()
 
 range_counts
-all %>% ggplot(aes(x=brand_name)) + geom_bar()
+all %>% ggplot(aes(x=brand_name)) + geom_histogram()
+
 ```
 
 ```{r}
@@ -94,20 +95,23 @@ product_l_ranges <- all %>% filter(brand_name %in% large_selcetion$brand_name) %
 
 brand_l_ranges <- all %>% filter(brand_name %in% large_selcetion$brand_name) %>%
   summarise(total_range = round(max(L)-min(L)),
-            min_lightness = (min(L)),
+            min_lightness = (min(L))
             max_lightness=max(L),.by = brand_name)
-brand_l_ranges %>% ggplot(aes(x=min_lightness,y=total_range,color=brand_name)) + geom_point()
+brand_l_ranges %>% filter(max_lightness < 180) %>% ggplot(aes(x=min_lightness,y=max_lightness,color=brand_name)) + geom_point()
 brand_l_ranges %>% ggplot(aes(x=max_lightness,y=total_range,color=brand_name)) + geom_point()
 
 ```
+
 ```{r}
 #Investingating lightness, and lightness range with Monk Category
 brand_l_ranges %>% ggplot(aes(x=total_range)) +geom_density() #distribution of total shade range ( what's the common range in shade lightness)
-brand_l_ranges %>%  filter(total_range>100)
-all %>% filter(brand_name=='Hourglass')
-all %>% distinct(brand_name,shade_name,.keep_all = T) %>% ggplot(aes(x=L)) + geom_density() + Labs
+#brand_l_ranges %>%  filter(total_range>100)
+#all %>% filter(brand_name=='Hourglass')
 
-
+all %>% distinct(brand_name,shade_name,.keep_all = T) %>% ggplot(aes(x=L)) + geom_density()
+```
+```{r}
+#graphing lightness vs monk score
 ```
 
 ```{r}
