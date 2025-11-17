@@ -271,7 +271,8 @@ categorized_brands %>% filter(skintone =='Deep') %>% summarise(count = n(),.by =
 ## Are Brands Being Stingy with the Monk Scores?
 For my final exploration I'm looking into at the distribution of monk scores of individual brands within their brand category.
 What I found was:
- - Luxury brands: Natasha Denona has the widest monk range. ALl brands have the most products in the 5 category
+ - Luxury brands: Natasha Denona has the widest monk range. ALl brands have the most products in the 5 category.
+ -
 
 ### Brand Category Vs Monk Category
 
@@ -308,12 +309,12 @@ ps1
 ts1
 ```
 
-# Conclusion
+# Conclusion:
 
 My biggest question from this data set was what was the overall frequency and distribution of foundation shades based undertone, monk color and skin tone labeling.
 What I found is that while most lightness levels lighter (higher lightness values) tend to be the most frequent while when looking into monk values, the distribution
 indicates that darker shades (higher monk values) are more common. I think this has to do with the limitations of the scale.
 
-When looking based on categories the affordable brands offered the most in terms of range of skin tone while luxury brands exceeded in undertone distribution.Affordable products have a happy medium that tends to lean towards darker and medium shades.
+When looking based on categories the affordable brands offered the most in terms of range of skin tone while luxury brands exceeded in undertone distribution.Affordable products have a happy medium that tends to lean towards darker and medium shades. Popular Brands lean towards offering wider ranges and more products in darker shades compared to luxury and affordable brands.
 
-Overall the most Skintone offered is medium
+Overall the skintone most offered is medium, the most common monk range is 5.0
