@@ -272,7 +272,7 @@ categorized_brands %>% filter(skintone =='Deep') %>% summarise(count = n(),.by =
 For my final exploration I'm looking into at the distribution of monk scores of individual brands within their brand category.
 What I found was:
  - Luxury brands: Natasha Denona has the widest monk range. ALl brands have the most products in the 5 category.
- -
+ - Trendy Brands: Wider ranges over all with Dynessa Myrick offerign the widest monk range. Alternatively,Haus Labs offers the lightest
 
 ### Brand Category Vs Monk Category
 
@@ -285,7 +285,7 @@ ls1<-lux_shades %>% ggplot(aes(x = monk_category, fill = hex_color)) +
     title = "Monk Skin Tone Category Distribution In Luxury Cosmetic Brands",
     x = "Monk Category",
     y = "Shade Count"
-  )
+  )+theme_minimal()
 ps1<- pop_shades %>% ggplot(aes(x = monk_category, fill = hex_color)) +
   geom_bar() +
   facet_wrap(~ brand_name, scales = "free_y") +
@@ -294,7 +294,7 @@ ps1<- pop_shades %>% ggplot(aes(x = monk_category, fill = hex_color)) +
     title = "Monk Skin Tone Category Distribution In Trending Cosmetic Brands",
     x = "Monk Category",
     y = "Shade Count"
-  )
+  )+theme_minimal()
 ts1<-top_shades %>% ggplot(aes(x = monk_category, fill = hex_color)) +
   geom_bar() +
   facet_wrap(~ brand_name, scales = "free_y") +
@@ -303,7 +303,7 @@ ts1<-top_shades %>% ggplot(aes(x = monk_category, fill = hex_color)) +
     title = "Monk Skin Tone Category Distribution In Affordable Cosmetic Brands",
     x = "Monk Category",
     y = "Shade Count"
-  )
+  )+theme_minimal()
 ls1
 ps1
 ts1
@@ -317,4 +317,4 @@ indicates that darker shades (higher monk values) are more common. I think this 
 
 When looking based on categories the affordable brands offered the most in terms of range of skin tone while luxury brands exceeded in undertone distribution.Affordable products have a happy medium that tends to lean towards darker and medium shades. Popular Brands lean towards offering wider ranges and more products in darker shades compared to luxury and affordable brands.
 
-Overall the skintone most offered is medium, the most common monk range is 5.0
+Overall the skintone most offered is medium, the most common monk range is 5.0. Shdaes on the palest and darkest sides of the spectrum tend to have the least offerings overall.
