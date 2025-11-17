@@ -1,6 +1,6 @@
 ---
-title: "Project Draft"
-output: html_notebook
+title: "My Presentation"
+output: html_document
 ---
 
 
@@ -20,6 +20,10 @@ all %>% duplicated() %>% sum()
 
 ```
 
+
+
+
+#
 
 ```{r}
 all<- all %>%
@@ -48,14 +52,17 @@ two %>% ggplot(aes(x=monk_category, fill=hex_color)) + geom_bar() + scale_fill_m
 #all %>% distinct(brand_name,shade_name,.keep_all = TRUE) %>%  ggplot(aes(x=hex, fill=hex_color)) + geom_bar() + scale_fill_manual(values = monk_palette)
 
 ```
+
+# 3
+
 ```{r}
 range_counts <- all %>% group_by(brand_name) %>% summarise(count=n())
 range_counts %>% slice_max(count) # Fenty has an extremely large number of shades compared to the average and min.
 range_counts %>% slice_min(count)
 range_counts %>% pull(count) %>% mean()
-
-range_counts
-all %>% ggplot(aes(x=brand_name)) + geom_histogram()
+range_counts %>% ggplot(aes(x=count)) + geom_histogram() + labs(title='Dsitribution of Number of Products Per Brand',
+                                                                x='Number of Products',
+                                                                y='Number of Brands With Product Range')
 
 ```
 
@@ -95,10 +102,10 @@ product_l_ranges <- all %>% filter(brand_name %in% large_selcetion$brand_name) %
 
 brand_l_ranges <- all %>% filter(brand_name %in% large_selcetion$brand_name) %>%
   summarise(total_range = round(max(L)-min(L)),
-            min_lightness = (min(L))
+            min_lightness = (min(L)),
             max_lightness=max(L),.by = brand_name)
 brand_l_ranges %>% filter(max_lightness < 180) %>% ggplot(aes(x=min_lightness,y=max_lightness,color=brand_name)) + geom_point()
-brand_l_ranges %>% ggplot(aes(x=max_lightness,y=total_range,color=brand_name)) + geom_point()
+brand_l_ranges %>% ggplot(aes(x=max_lightness,y=total_range)) + geom_point()
 
 ```
 
@@ -118,7 +125,6 @@ all %>% distinct(brand_name,shade_name,.keep_all = T) %>% ggplot(aes(x=L)) + geo
 #graphing number of products per brand
 products <- read.csv('products.csv')
 products %>% ggplot(aes(x=brand_id))+geom_bar()
-prod_counts
 ```
 ```{r}
 shades<- read.csv('shades.csv')
@@ -127,4 +133,93 @@ shades %>%
   ggplot(aes(x = product_id)) +
   geom_bar() + labs(x = "Product ID", y = "Count of Shades")
 
+```
+
+
+```{r}
+# Regex for formats like "010N aglow" or "16 - Deep..."
+regex1 <- "^(\\S+)\\s+(?:-\\s+)?(.+)$"
+
+# Regex for joined patterns like "L2OLIVE"
+regex2 <- "^([A-Z0-9]+?)([A-Z][a-z]+|[A-Z]{2,})$"
+
+# extracting string groups for shade names using str match.
+extracted1 <- str_match(shades$shade_name, regex1)
+extracted2 <- str_match(shades$shade_name, regex2)
+
+# --- Step 3 & 4: Combine results using mutate and coalesce ---
+
+# We access the capture groups from the matrix:
+# extracted1[, 2] is the number/code from regex1
+# extracted1[, 3] is the name/description from regex1
+# extracted2[, 2] is the number/code from regex2
+# extracted2[, 3] is the name from regex2
+
+df_shades_separated <- shades %>%
+  mutate(
+    # coalesce() finds the first non-NA value from its arguments.
+    # 1. Try the number from regex1 (space-separated)
+    # 2. If NA, try the number from regex2 (joined)
+    # 3. If still NA, use the original shade_name (for cases like "110")
+    shade_specific = coalesce(extracted1[, 2], extracted2[, 2], shade_name),
+
+    # 1. Try the name from regex1 (space-separated)
+    # 2. If NA, try the name from regex2 (joined)
+    # 3. If still NA, it remains NA (for cases like "110" that have no name part)
+    shade_name_only = coalesce(extracted1[, 3], extracted2[, 3])
+  )
+#write_csv(df_shades_separated, "shades_separated.csv")
+```
+
+
+```{r}
+library(stringr)
+shades_final <- read.csv('shades_separated.csv')
+undertone_pattern <- "(?i)(olive|peach|warm|neutral|cool|pink|rosy|yellow|golden|red)"
+skintone_pattern <-  "(?i)(very light|very deep
+                            |medium rich|medium tan|meduim light| mediumight|very fair
+                            |fair|medium|medium tan|tan|rich|deep|dark|)"
+
+# Assumes your data frame is named 'df'
+shades_final <- shades_final %>%
+  mutate(
+    undertone = str_to_lower(str_extract(shade_name, undertone_pattern)),
+    skintone = str_to_lower(str_extract(shade_name, undertone_pattern))
+  )
+write_csv(shades_final, "shades_final.csv")
+
+```
+``{r}
+word_search <- 'ivory|ebony|mahogany|porcelain|pearl|alabaster'
+total_count <- shades %>%
+  pull(name) %>%
+  str_to_lower() %>%   # Make everything lowercase
+  str_detect(word_search)
+
+word_counts <- shades %>%
+  mutate(word_found = str_extract(str_to_lower(name), word_search)) %>%summarise(count = n(), .by=word_found) %>%
+        filter(!is.na(word_found))
+word_counts %>% ggplot(aes(word_found,count)) + geom_col() +
+        labs(title = 'Shades That Use Precious Material words', x='word' )
+```
+
+```{r}
+shades %>%
+  filter(!is.na(skintone)) %>%
+  # 1. Calculate the percentages yourself (it's cleaner!)
+  count(skintone) %>%
+  mutate(percentage = n / sum(n)) %>%
+
+  # 2. Plot with the new calculated columns
+  ggplot(aes(x = skintone, y = percentage)) +
+
+  # 3. Use geom_col() because we have a 'y' value now
+  geom_col() +
+
+  # 4. Format the Y axis to look like percentages
+  scale_y_continuous(labels = scales::percent) +
+
+  labs(title = "Percentage of Skin Tone Variety",
+       x = "Skin Tone",
+       y = "Percentage")
 ```
