@@ -1,23 +1,63 @@
 ---
-title: "Is There 'REALLY' Variety in Foundation Shades"
+title: Is it REALLY Giving Diversity?
+subtitle: An exploration of foundation shade variance.
 author: "Lindsey Smith"
-output: slidy_presentation
+output:
+  slidy_presentation:
+    theme: readable
 ---
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(echo = TRUE)
 library(tidyverse)
 ```
 # Introduction
-The objective of this data analysis is to explore foundation shade range through, monk color scale, lightness values, undertone and skintone.
-I will be using three data sets to explore these features. My primary data set is the shades data set.
 
-After seeing the shades dataframe I knew I wanted to add the features skintone,undertone, and specific and name (shade name without specifc or descriptions).
+The cosmetic industry is a multibillion dollar worth over 599 Billon USD. Cosmetics can range from a variety of products from nail polish, to face wash and all the beautifying items in between. With such a wide range of products
+one can't help but wonder if that diversity in options translates to particular mainstay cosmetic products like foundation.
+
+Focusing on Foundation products, what key pieces of information would answer or at least start to answer the question: Is there variety amongst cosmetic shades? If so, what types of brands seem to have to the most diversity.
+
+
+# The Data:
+I will be using four data sets to explore these features. Below I've listed them and the features we will be accessing throughout this data analysis.
+
+- shades.csv
+  - shade_id: ID number assigned to each foundation shade
+  - product_id: ID number assigned to each product
+  - shade_name
+
+- brands.csv
+  - brand_id: ID number assigned to each brand
+  - brand name: Name of cosmetic brand
+- cielab.csv
+  - Monk Category : This is a scale from 1-10 to express skintone colors from lightest to darkest.
+  - L: Lightness value. This is the percent value from 1-100 of visible luminance to the human eye. AKA: How light/bright something is.
+
+- products.csv
+  - brand_id: ID number assigned to each brand
+  - product_id: ID number assigned to each product
+
+
+# It's Giving Unseasoned:
+
+### Data Cleaning and Feature Enrichment
+
+After seeing the shades dataframe I knew I wanted to add the features skintone,undertone, and specific color code and name (shade name without specific or descriptions).
+
 I used regex and filled and corrected in values that regex couldn't handle by hand.
 ```{r}
 shades<- read.csv('shades.csv')
 glimpse(shades)
 ```
 
+
+I also created mapping for skintone and undertone using to create the new columns.
+
+- Undertone. undertone given in shade_name description i.e(cool, warm, neutral, rosy..etc)"
+- Skintone. skintone description given in shade name i.e( dark, rich, fair, medium...etc)
+- Shade specific. the color code of a foundation shade
+- Name. The shade name of a given foundation product
+```
 
 
 ```{r}
@@ -38,7 +78,7 @@ extracted2 <- str_match(shades$shade_name, regex2)
 shades_separated <- shades %>%
   mutate(skintone = str_to_title(str_extract(shade_name, skintone_pattern)),
          undertone = str_to_title(str_extract(shade_name, undertone_pattern)),
-         shade_specific_raw = coalesce(extracted1[, 2], extracted2[, 2], shade_name),
+         shade_specific_raw = coalesce(extracted1[, 2], extracted2[, 2], shade_name), # creating shade specific using non 0 extracted values
          shade_name_only = str_to_title(coalesce(extracted1[, 3], extracted2[, 3])),
          shade_specific = if_else(str_detect(shade_specific_raw, "\\d"), # assins NA to non Alphanumeric values in shade specfic by using the shade_specific_raw column
                                   shade_specific_raw,
@@ -47,8 +87,18 @@ shades_separated <- shades %>%
 #write_csv(shades_separated, "shades_final.csv")
 ```
 
+#
+After hours and lots of questioning my educational career cleaning up values by hand that I wasn't able to hand in R we have the final dataset:
+
 ```{r}
 shades <- read_csv('shades_final.csv')
+glimpse(shades)
+```
+
+##
+
+Now that that's all over we can now join our other datasets to create one large unified set.
+```{r,joining}
 cielab <- read_csv('cielab.csv')
 products <- read_csv('products.csv')
 brands <- read_csv('brands.csv')
