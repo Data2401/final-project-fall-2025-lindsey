@@ -4,7 +4,7 @@ subtitle: An exploration of foundation shade variance.
 author: "Lindsey Smith"
 output:
   slidy_presentation:
-    theme: readable
+    theme: cosmo
 ---
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(echo = TRUE)
@@ -50,14 +50,13 @@ shades<- read.csv('shades.csv')
 glimpse(shades)
 ```
 
-
+###
 I also created mapping for skintone and undertone using to create the new columns.
 
 - Undertone. undertone given in shade_name description i.e(cool, warm, neutral, rosy..etc)"
 - Skintone. skintone description given in shade name i.e( dark, rich, fair, medium...etc)
 - Shade specific. the color code of a foundation shade
 - Name. The shade name of a given foundation product
-```
 
 
 ```{r}
@@ -86,7 +85,6 @@ shades_separated <- shades %>%
   )
 #write_csv(shades_separated, "shades_final.csv")
 ```
-
 #
 After hours and lots of questioning my educational career cleaning up values by hand that I wasn't able to hand in R we have the final dataset:
 
@@ -96,8 +94,7 @@ glimpse(shades)
 ```
 
 ##
-
-Now that that's all over we can now join our other datasets to create one large unified set.
+Now that, that's all over we can now join our other datasets to create one large unified set.
 ```{r,joining}
 cielab <- read_csv('cielab.csv')
 products <- read_csv('products.csv')
@@ -240,7 +237,8 @@ shades %>% mutate(L=round(L)) %>% filter(!is.na(undertone)) %>%
 ```
 
 
-# But is it Tracking? How Do They Compare to the Overall Population?
+# But is it Tracking?
+### How Do Various Brand Types Compare to the Overall Population?
 
 To get a better idea of how shade range and tones were distributed, I decided to make 3 categories of Brands.
 
@@ -299,7 +297,8 @@ labs(title = str_to_title('How often is a Undertone descripton used in each bran
 print(categorized_brands %>% filter(!is.na(undertone)) %>% summarise(n(),.by=(category)))
 ```
 
-# Skintone Vs Brand Category
+#
+## Skintone Vs Brand Category
 While Deep isn't the most frequently occurring skintone across brands, Light is. When exploring tone combinations earlier Neutral Light was the second most frequent combination. This tells me that Deep may not be the most common skintone but neutral is a common undertone in skintone.
 ```{r}
 categorized_brands %>% filter(!is.na(skintone)) %>%group_by(category) %>%
