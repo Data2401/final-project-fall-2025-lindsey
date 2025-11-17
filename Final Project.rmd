@@ -1,0 +1,319 @@
+---
+title: "Is There 'REALLY' Variety in Foundation Shades"
+author: "Lindsey Smith"
+output: slidy_presentation
+---
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+library(tidyverse)
+```
+# Introduction
+The objective of this data analysis is to explore foundation shade range through, monk color scale, lightness values, undertone and skintone.
+I will be using three data sets to explore these features. My primary data set is the shades data set.
+
+After seeing the shades dataframe I knew I wanted to add the features skintone,undertone, and specific and name (shade name without specifc or descriptions).
+I used regex and filled and corrected in values that regex couldn't handle by hand.
+```{r}
+shades<- read.csv('shades.csv')
+glimpse(shades)
+```
+
+
+
+```{r}
+regex1 <- "^(\\S+)\\s+(?:-\\s+)?(.+)$" # regex to extract the first part of shade name
+regex2 <- "^([A-Z0-9]+?)([A-Z][a-z]+|[A-Z]{2,})$" #extracts the second part of shade name
+
+undertone_pattern <- "(?i)(neutral pink| neutral cool|neutral rosy|neutral peach|neutral warm|neutral yellow|
+olive|peach|warm|neutral|cool|pink|rosy|yellow|golden|red)" #maapping for undertones
+
+skintone_pattern <- "(?i)(deep dark|medium to tan|very light|very deep|medium rich|medium tan|
+                    medium light|medium deep|medium dark| light deep|light medium|very fair|fair|medium|light|tan |rich|deep|dark|deep|deep )" #mapping for skintones
+
+# extracting string groups for shade names .
+extracted1 <- str_match(shades$shade_name, regex1)
+extracted2 <- str_match(shades$shade_name, regex2)
+
+# Adding new columns and saving to new csv file
+shades_separated <- shades %>%
+  mutate(skintone = str_to_title(str_extract(shade_name, skintone_pattern)),
+         undertone = str_to_title(str_extract(shade_name, undertone_pattern)),
+         shade_specific_raw = coalesce(extracted1[, 2], extracted2[, 2], shade_name),
+         shade_name_only = str_to_title(coalesce(extracted1[, 3], extracted2[, 3])),
+         shade_specific = if_else(str_detect(shade_specific_raw, "\\d"), # assins NA to non Alphanumeric values in shade specfic by using the shade_specific_raw column
+                                  shade_specific_raw,
+                                  NA_character_)
+  )
+#write_csv(shades_separated, "shades_final.csv")
+```
+
+```{r}
+shades <- read_csv('shades_final.csv')
+cielab <- read_csv('cielab.csv')
+products <- read_csv('products.csv')
+brands <- read_csv('brands.csv')
+
+#joining to make unified table
+
+shades <- shades %>% left_join(cielab,"shade_id")
+shades<- shades %>% left_join(products,"product_id")
+shades <- shades %>% left_join(brands, 'brand_id') %>% select(brand_name,shade_name,product_id,name,skintone,undertone,monk_category,L)
+shades
+```
+
+# The Most Common Monk Shade?
+The most common monk Category seems to be 5 with 6 falling close behind. I want to look at the lightness values inside these two monk scores and establish any similarities between their lightness values.
+
+
+```{r}
+shades <- shades %>%
+  mutate(
+    hex_color = case_when(
+      monk_category == 1  ~ "#f6ede4",
+      monk_category == 2  ~ "#f3e7db",
+      monk_category == 3  ~ "#f7ead0",
+      monk_category == 4  ~ "#eadaba",
+      monk_category == 5  ~ "#d7bd96",
+      monk_category == 6  ~ "#a07e56",
+      monk_category == 7  ~ "#825c43",
+      monk_category == 8  ~ "#604134",
+      monk_category == 9  ~ "#3a312a",
+      monk_category == 10 ~ "#292420"
+    )
+  )
+monk_palette <- c(
+  "#f6ede4", "#f3e7db", "#f7ead0", "#eadaba", "#d7bd96",
+  "#a07e56", "#825c43", "#604134", "#3a312a", "#292420")
+
+two <- shades %>% distinct(brand_name,shade_name,.keep_all = T)
+two_counts <-shades %>%  distinct(brand_name,shade_name,.keep_all = T) %>% summarise(count=n(),.by=brand_name)
+two %>% ggplot(aes(x=monk_category, fill=hex_color)) + geom_bar(show.legend = F) + scale_fill_manual(values = monk_palette[10:1])
+as_tibble(two_counts)
+```
+
+## It's Giving Twin: What similarities do the top 2 monk categories have with each other?
+
+Zooming into monk categories 5 & 6 We see that there is little to no overlap between the two categories. What is shown is that while category 5 is the most frequently occurring category, category 6 has a wider range of lightness values. They majority of those values fall in the 65 value range. The majority of foundation products in category 6 are in the high 70s in terms of lightness.
+
+This was an interesting sidequest but doesn't tell us much about options.
+
+```{r}
+shades %>%
+  filter(monk_category %in% c(5, 6)) %>%
+  distinct(brand_name, shade_name, .keep_all = TRUE) %>%
+  mutate(cat_factor = factor(monk_category),
+         L=round(L)) %>%filter(L < 200) %>% #filtering bc the highest possible lightness can be is 100
+  ggplot(aes(x = cat_factor, y = L, fill = cat_factor)) + geom_violin() +
+        scale_fill_manual(values = c(monk_palette[5], monk_palette[6])) +
+        labs(title = "Lightness (L) Ranges for Monk Categories 5 & 6",
+       x = "Monk Category",
+       y = "Lightness Value (L)")
+```
+
+# Can we turn on the Lights?
+## What is the distribution of lightness Values?
+
+
+Overall, the most frequent lightness value seems to be around 75 with a smaller peak around 50. The lightness values are pretty high compared to the monk scores. I guess reducing such a large range of values into 10 hex categories can leave a little room for error.
+However, I would label this as most lightness values falling into a medium skintone range as 75 represents a 75% luminance.
+```{r}
+shades %>% mutate(L=round(L)) %>%
+        filter((L<200)) %>%
+        ggplot(aes(L)) +
+        geom_density() + labs(title = 'Frequency of Ligtness values(L) Amongst Foundation Shades',x='Lightness Value') + theme_minimal()
+
+
+```
+# Undertones and Skintones
+
+## Watching your tone? What skin tone and undertone combination is most prevalent?
+Deep Neutral is the most common skintone and undertone combination, light Neutral is only slightly behind.
+
+```{r}
+skin_undertone <- shades %>%
+  filter(!is.na(skintone), !is.na(undertone)) %>%
+  summarise(count = n(),
+            avg_monk = round(mean(monk_category, na.rm = TRUE)),
+            .by = c(skintone, undertone)) %>%
+        slice_max(count, n = 10) %>%
+        mutate(combo_label = paste(skintone, undertone),
+    fill_color = monk_palette[avg_monk]
+  )
+
+skin_undertone %>%  ggplot(aes(x = reorder(combo_label, count), y = count, fill =fill_color )) +
+  geom_col() + coord_flip() + scale_fill_identity() +
+  labs(title = "Top 10 Skintone & Undertone Combinations",
+       x = "Combination",
+       y = "Count")
+
+```
+
+
+
+```{r}
+shades %>% mutate(skintone,undertone)
+
+```
+
+
+Diving into Skin Tone I wanted to look at the distribution of skin tone labeling,
+
+```{r}
+
+skin_explore2 <- shades %>% filter(!is.na(skintone)) %>%
+        summarise(count = n(), avg_monk = round(mean(monk_category)),
+                  color=monk_palette[avg_monk],.by=skintone) %>%
+        filter(count > 10 ) %>%
+        ggplot(aes(reorder(x=skintone,count),count,fill=color))+
+        geom_col()+ scale_fill_identity()+
+        labs(title = 'Distribution of Skin Tone Labels', x='Skin Tone',y='Count') +
+        coord_flip() + theme_minimal()
+
+
+skin_explore2
+
+
+```
+
+
+# What Undertones offer the most options in monk range
+
+Warm, rosy, neutral and cool shades have the highest counts and widest ranges for Monk categories. However, all undertones seem to lack a substantial amount of offering for
+skin tones falling in the lightest ranges of the monk scale (1-3) This Doesn't align with what I saw with lightness values, maybe the monk scale groupings are too small.
+```{r}
+shades %>% mutate(L=round(L)) %>% filter(!is.na(undertone)) %>%
+  group_by(undertone,monk_category,hex_color) %>%
+  summarise(count = n())%>% filter(count > 1) %>%
+  ggplot(aes(x=monk_category,count,fill=hex_color))+
+  geom_col(show.legend = F) + facet_wrap(~undertone,scales='free_y')+
+  labs(title = 'Distribution of Under Tone Labels', x='Under Tone',y='Count') +scale_fill_manual(values = monk_palette[10:1]) + theme_minimal()
+```
+
+
+# But is it Tracking? How Do They Compare to the Overall Population?
+
+To get a better idea of how shade range and tones were distributed, I decided to make 3 categories of Brands.
+
+- luxury_brands: Brands that are considered more expensive over
+- pop_brands: Brands that are considered trendy (They were on the first page of Sephora Bestsellers)
+-
+
+```{r}
+luxury_brands <- 'Armani Beauty,|DIOR|Hourglass|NATASHA DENONA|PAT McGRATH LABS'
+lux_shades<- shades %>% filter(str_detect(brand_name,luxury_brands)) %>% mutate(category = "Luxury")
+
+pop_brands <- 'Danessa Myricks Beauty|HAUS LABS BY LADY GAGA|MAKEUP BY MARIO|Rare Beauty by Selena Gomez|Huda Beauty'
+pop_shades<- shades %>% filter(str_detect(brand_name,pop_brands)) %>% mutate(category = "Trendy")
+
+afford_brands <-'e.l.f. Cosmetics|Revlon|NYX Professional Makeup|Maybelline|SEPHORA COLLECTION'
+top_shades<- shades %>% filter(str_detect(brand_name, afford_brands)) %>% mutate(category = "Affordable")
+
+categorized_brands <- bind_rows(lux_shades, pop_shades, top_shades)
+```
+
+Across the 3 categories I looked into all brands seem to have the most shades in the same lightness range. Luxury brands seem to concentrate most of their
+foundation brands to a higher lightness with little identifiable peaks in lower lightness ranges. However Trendy brands have visible peaking in lower lightness
+ranges suggesting more foundation products available in lower ranges.
+
+
+```{r}
+#lux_shades %>% ggplot(aes(L)) + geom_density() + labs(title = 'Frequency of Ligtness values(L) in Luxury Brand Foundation Shades ',
+                                                       #x='Lightness Value') + theme_minimal()
+#pop_shades %>% ggplot(aes(L)) + geom_density() + labs(title = 'Frequency of Ligtness values(L) in Trendy Brand Foundation Shades ',
+                                                       #x='Lightness Value')+ theme_minimal()
+#top_shades %>% ggplot(aes(L)) + geom_density() + labs(title = 'Frequency of Ligtness values(L) in Affordable Brand Foundation Shades ',
+                                                       #x='Lightness Value') + theme_minimal()
+
+ggplot(categorized_brands, aes(x = L, color = category)) +
+  geom_density(alpha = 0.4) + # 'alpha' makes it transparent so you can see overlaps
+  labs(title = "Comparison of Lightness Values (L) Across Brand Types",
+       x = "Lightness Value (L)",
+       y = "Density",
+       fill = "Brand Type") +theme_minimal()
+
+```
+
+
+
+# A Range of Options:
+## What Brand Categories offer the most Variety?
+
+When looking at the  frequency by of undertones one thing is very clear Neutral is by far the most used undertone description. This aligns with the combination of deep neutral being the #1 used skintone/undertone combination.
+
+```{r}
+categorized_brands %>% filter(!is.na(undertone)) %>% group_by(category) %>%
+ ggplot(aes(category,fill=undertone))+geom_bar(position = 'dodge') + theme_minimal() +
+labs(title = str_to_title('How often is a Undertone descripton used in each brand category'),x='Brand Category',y='Undertone Counts')
+
+
+print(categorized_brands %>% filter(!is.na(undertone)) %>% summarise(n(),.by=(category)))
+```
+
+# Skintone Vs Brand Category
+While Deep isn't the most frequently occurring skintone across brands, Light is. When exploring tone combinations earlier Neutral Light was the second most frequent combination. This tells me that Deep may not be the most common skintone but neutral is a common undertone in skintone.
+```{r}
+categorized_brands %>% filter(!is.na(skintone)) %>%group_by(category) %>%
+        ggplot(aes(category,fill=skintone))+geom_bar(position = 'dodge') + labs(title = "Frequency of Skin Tone Variety
+        by Brand Category",y="Count",x='Brand Category' ) + theme_minimal()
+
+print(categorized_brands %>% filter(!is.na(skintone)) %>% summarise(n(),.by = category))
+```
+
+### I'll Follow this hunch by plotting the undertones in deep:
+
+So my suspicions were correct! Although Deep is the third largest skintone shade offered, neutral is the top undertone offered in the category.
+
+```{r}
+categorized_brands %>% filter(skintone =='Deep') %>% summarise(count = n(),.by = undertone) %>%
+        top_n(5) %>% ggplot(aes(reorder(x=undertone,count),count)) + geom_col(fill='#a07e56') + labs(title = 'Top 5 Undertones in Deep Skin Category',x ='Undertone') + theme_minimal()
+
+```
+## Are Brands Being Stingy with the Monk Scores?
+For my final exploration I'm looking into at the distribution of monk scores of individual brands within their brand category.
+What I found was:
+ - Luxury brands: Natasha Denona has the widest monk range. ALl brands have the most products in the 5 category
+
+### Brand Category Vs Monk Category
+
+```{r}
+ls1<-lux_shades %>% ggplot(aes(x = monk_category, fill = hex_color)) +
+  geom_bar() +
+  facet_wrap(~ brand_name, scales = "free_y") +
+  scale_fill_identity() +
+  labs(
+    title = "Monk Skin Tone Category Distribution In Luxury Cosmetic Brands",
+    x = "Monk Category",
+    y = "Shade Count"
+  )
+ps1<- pop_shades %>% ggplot(aes(x = monk_category, fill = hex_color)) +
+  geom_bar() +
+  facet_wrap(~ brand_name, scales = "free_y") +
+  scale_fill_identity() +
+  labs(
+    title = "Monk Skin Tone Category Distribution In Trending Cosmetic Brands",
+    x = "Monk Category",
+    y = "Shade Count"
+  )
+ts1<-top_shades %>% ggplot(aes(x = monk_category, fill = hex_color)) +
+  geom_bar() +
+  facet_wrap(~ brand_name, scales = "free_y") +
+  scale_fill_identity() +
+  labs(
+    title = "Monk Skin Tone Category Distribution In Affordable Cosmetic Brands",
+    x = "Monk Category",
+    y = "Shade Count"
+  )
+ls1
+ps1
+ts1
+```
+
+# Conclusion
+
+My biggest question from this data set was what was the overall frequency and distribution of foundation shades based undertone, monk color and skin tone labeling.
+What I found is that while most lightness levels lighter (higher lightness values) tend to be the most frequent while when looking into monk values, the distribution
+indicates that darker shades (higher monk values) are more common. I think this has to do with the limitations of the scale.
+
+When looking based on categories the affordable brands offered the most in terms of range of skin tone while luxury brands exceeded in undertone distribution.Affordable products have a happy medium that tends to lean towards darker and medium shades.
+
+Overall the most Skintone offered is medium
